@@ -1,0 +1,15 @@
+patientID,symptom,diagnosis,date
+00000000,"Cough,breathlessness",common cold,2024-10-07
+00000000,"Cough,breathlessness",common cold,2024-09-27
+00000000,"Cough,breathlessness",common cold,2024-09-27
+00000000,"Bloating , Diarrhea, Stomach_pain",Stomach_flu/Stomach_Infection,2024-10-09
+00000000,"constipation,diarrhoea",Gastroenteritis,2024-10-17
+00000000,"cough,fever,sneezing,cold",Varicose Veins,2024-10-17
+00000000,"cough,fever,sneezing,cold",Bronchial Asthma,2024-10-17
+00000000,"Cough,breathlessness",Influenza,2024-10-18
+00000000,"constipation,diarrhoea",Gastroenteritis,2024-10-18
+00000000,"Cough,breathlessness",common cold,2024-10-22
+D317AC9,"Bloating , Diarrhea, Stomach_pain",Stomach_flu/Stomach_Infection,2024-10-03
+33BC5C9,"cough,fever,sneezing,cold",Bronchial Asthma,2024-10-17
+33BC5C9,"Bloating , Diarrhea, Stomach_pain",Stomach_flu/Stomach_Infection,2024-10-02
+C355D0C8,"Bloating , Diarrhea, Stomach_pain",Stomach_flu/Stomach_Infection,2024-10-22

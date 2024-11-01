@@ -1,0 +1,10 @@
+patientID,name,temperature,symptoms,prognosis,appointment_date
+00000000,Patient0,N/A,"sweating,cough,high_feveritching,skin_rash,nodal_skin_eruptions,continuous_sneezing,shivering",Allergy,2024-10-19
+00000000,Mayank Kumar,N/A,"constipation,diarrhoea",Gastroenteritis,2024-10-20
+00000000,Mayank Kumar,N/A,"muscle_pain,loss_of_smell,fatigue,chest_pain",Malaria,2024-10-20
+00000000,Mayank Kumar,N/A,"sweating,cough,high_feveritching,skin_rash,nodal_skin_eruptions,continuous_sneezing,shivering",Heart Attack,2024-10-23
+00000000,Mayank Kumar,N/A,"sweating,cough,high_feveritching,skin_rash,nodal_skin_eruptions,continuous_sneezing,shivering",Heart Attack,2024-10-24
+C355D0C8,Card3,93.00,"muscle_pain,loss_of_smell,fatigue,chest_pain",Malaria,2024-10-21
+00000000,Bhartesh,N/A,"constipation,diarrhoea",Gastroenteritis,2024-10-22
+00000000,Bhartesh,N/A,"throat_irritation,runny_nose,headache,high_fever,chills,fatigue",Typhoid,2024-10-23
+433BD250,Bhartesh,92.67,"throat_irritation,runny_nose,headache,high_fever,chills,fatigue",Typhoid,2024-10-23
