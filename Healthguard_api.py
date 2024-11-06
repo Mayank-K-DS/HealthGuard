@@ -1,4 +1,5 @@
 from flask import Flask, request, render_template, redirect, jsonify, url_for, session, flash
+from flask_cors import CORS
 import datetime
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -8,6 +9,8 @@ import os
 import csv
 
 app = Flask(__name__)
+
+CORS(app)
 
 app.secret_key = '12345678'
 
@@ -19,6 +22,7 @@ patient_data = {}
 doctor_records = {}
 appointments_csv = r"appointments.csv"
 emergency_status = {"active": False}
+
 
 df = pd.read_csv(r"C:\Users\LENOVO\Desktop\Projects\Healthguard\symbipredict_2022.csv")
 symptom_columns = df.columns[:-1]
@@ -57,6 +61,15 @@ def load_patient_data():
                 }
     return patient_data
 
+def load_appointments(patient_id):
+    appointments = []
+    with open(appointments_csv, mode='r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row['patientID'] == patient_id:
+                appointments.append(row)
+    return appointments
+
 def load_doctor_records():
     doctor_records = {}
     if os.path.exists(doctor_records_csv):
@@ -87,20 +100,6 @@ def save_patient_data():
                 'temperature': info.get('temperature', "N/A")
             })
 
-def save_doctor_records():
-    with open(doctor_records_csv, mode='w', newline='') as file:
-        fieldnames = ['patientID', 'symptom', 'diagnosis', 'date']
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        for pid, records in doctor_records.items():
-            for record in records:
-                writer.writerow({
-                    'patientID': pid,
-                    'symptom': record['symptom'],
-                    'diagnosis': record['diagnosis'],
-                    'date': record['date']
-                })
-
 patient_data = load_patient_data()
 doctor_records = load_doctor_records()
 
@@ -118,6 +117,11 @@ def predict():
     symptoms = request.form['symptoms'].lower().split(',')
     symptoms = [symptom.strip() for symptom in symptoms]
     predicted_disease = predict_disease(symptoms)
+    
+   
+    session['symptoms'] = ','.join(symptoms)
+    session['prognosis'] = predicted_disease
+
     return render_template('result.html', disease=predicted_disease)
 
 @app.route('/update_patient', methods=['POST'])
@@ -209,18 +213,24 @@ def change_patient_info():
 
 def save_appointment_data(appointment_data):
     with open(appointments_csv, mode='a', newline='') as file:
-        fieldnames = ['patientID', 'name', 'temperature', 'symptoms', 'prognosis', 'appointment_date']
+        fieldnames = ['patientID', 'name', 'temperature', 'symptoms', 'prognosis', 'appointment_date', 'appointment_time']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
+        
         if os.stat(appointments_csv).st_size == 0:
             writer.writeheader()
-        writer.writerow(appointment_data)
         
+        writer.writerow(appointment_data)
+
 @app.route('/save_appointment', methods=['POST'])
 def save_appointment():
     appointment_date = request.form['appointment_date']
+    appointment_time = request.form['appointment_time']
     patient_info = patient_data.get(patientID, {})
-    symptoms = request.form.get('symptoms', "N/A")
-    prognosis = predict_disease(symptoms.split(','))
+
+    symptoms = session.get('symptoms', "N/A")
+    prognosis = session.get('prognosis', "N/A")
+
+    print(f"Symptoms: {symptoms}, Prognosis: {prognosis}")
 
     appointment_data = {
         'patientID': patientID,
@@ -228,12 +238,19 @@ def save_appointment():
         'temperature': patient_info.get('temperature', 'N/A'),
         'symptoms': symptoms,
         'prognosis': prognosis,
-        'appointment_date': appointment_date
+        'appointment_date': appointment_date,
+        'appointment_time': appointment_time
     }
 
     save_appointment_data(appointment_data)
 
+
+    session.pop('symptoms', None)
+    session.pop('prognosis', None)
+
     return redirect(url_for('index'))
+
+
 
 @app.route('/login_as_doctor', methods=['GET', 'POST'])
 def login_as_doctor():
@@ -270,7 +287,6 @@ def doctor_dashboard():
         print(f"Updated records for PatientID: {patient_id}, Symptom: {symptom}, Diagnosis: {diagnosis}, Date: {date}")
 
         return redirect(url_for('doctor_dashboard'))
-
     return render_template('doctor_dashboard.html')
 
 @app.route('/view_patient_dashboard/<patient_id>')
@@ -283,7 +299,9 @@ def view_patient_dashboard(patient_id):
 @app.route('/book_appointment')
 def book_appointment():
     image_path = r"static\images\Doctor_s_Contact_Number.png"
-    return render_template('book_appointment.html', image_path=image_path)
+    symptoms = session.get('symptoms')  
+    prognosis = predict_disease(symptoms) if symptoms else "N/A"  
+    return render_template('book_appointment.html', image_path=image_path, prognosis=prognosis)
 
 @app.route('/confirm_emergency_help', methods=['GET'])
 def confirm_emergency_help():
@@ -317,6 +335,21 @@ def doctor_appointments():
     
     return render_template('doctor_appointments.html', appointments=appointments)
 
+def save_doctor_records():
+    with open(doctor_records_csv, mode='w', newline='') as file:
+        fieldnames = ['patientID', 'symptom', 'diagnosis', 'date', 'appointment_time']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        for pid, records in doctor_records.items():
+            for record in records:
+                writer.writerow({
+                    'patientID': pid,
+                    'symptom': record['symptom'],
+                    'diagnosis': record['diagnosis'],
+                    'date': record['date'],
+                })
+
+
 @app.route('/mark_as_done/<int:appointment_index>', methods=['POST'])
 def mark_as_done(appointment_index):
     appointments = []
@@ -326,12 +359,16 @@ def mark_as_done(appointment_index):
             appointments = list(reader)
 
     if 0 <= appointment_index < len(appointments):
+        
         appointment = appointments.pop(appointment_index)
+
+       
         patient_id = appointment['patientID']
         symptom = appointment['symptoms']
         diagnosis = appointment['prognosis']
         date = datetime.datetime.now().strftime('%Y-%m-%d')
 
+        
         if patient_id not in doctor_records:
             doctor_records[patient_id] = []
         doctor_records[patient_id].append({
@@ -339,17 +376,32 @@ def mark_as_done(appointment_index):
             'diagnosis': diagnosis,
             'date': date
         })
-
         save_doctor_records()
 
+       
         with open(appointments_csv, mode='w', newline='') as file:
-            fieldnames = ['patientID', 'name', 'temperature', 'symptoms', 'prognosis', 'appointment_date']
+            fieldnames = ['patientID', 'name', 'temperature', 'symptoms', 'prognosis', 'appointment_date', 'appointment_time']
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(appointments)
+
+            
+            filtered_appointments = [{key: appointment[key] for key in fieldnames if key in appointment} for appointment in appointments]
+            writer.writerows(filtered_appointments)
 
     return redirect(url_for('doctor_appointments'))
 
+
+@app.route('/user_enter', methods=['GET', 'POST'])
+def user_enter():
+    if request.method == 'POST':
+        patient_id = request.form.get('patientID') 
+        return redirect(url_for('view_appointments', patient_id=patient_id))
+    return render_template('user_enter.html')
+
+@app.route('/user_appointments/<patient_id>')
+def view_appointments(patient_id):
+    appointments = load_appointments(patient_id)
+    return render_template('user_appointments.html', patient_id=patient_id, appointments=appointments)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
